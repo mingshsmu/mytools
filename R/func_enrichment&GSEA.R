@@ -9,7 +9,7 @@ setClass(Class = "enrich",
 #' @usage enrich_analysis(DEG_res, 
 #' n_top = 200,
 #' method = "DESeq2",
-#' signatures = c("GO","KEGG","HALLMARK","REACTOME","TF","miRNA"),
+#' signatures = c("GO","KEGG","HALLMARK","REACTOME"),
 #' padj_threshold = 0.05)
 #' 
 #' @param DEG_res The result of DEG_calculate
@@ -29,7 +29,7 @@ setClass(Class = "enrich",
 #' @author GM.W
 #' 
 enrich_analysis <- function(DEG_res, n_top=200,method=c("DESeq2","edgeR","limma_voom","limma","wilcox"),
-                            signatures=c("GO","KEGG","HALLMARK","REACTOME","TF","miRNA"),
+                            signatures=c("GO","KEGG","HALLMARK","REACTOME"),
                             padj_threshold=0.05){
   # 1. check parameter
   if(!all(signatures %in% c("GO","KEGG","HALLMARK","REACTOME","TF","miRNA"))){
@@ -115,9 +115,7 @@ enrich_analysis <- function(DEG_res, n_top=200,method=c("DESeq2","edgeR","limma_
                        "GO" = "c5.go.v2022.1.Hs.symbols_GO.gmt",
                        "KEGG" = "c2.cp.kegg.v2022.1.Hs.symbols_KEGG.gmt",
                        "HALLMARK" = "h.all.v2022.1.Hs.symbols_hallmark.gmt",
-                       "REACTOME" = "c2.cp.reactome.v2022.1.Hs.symbols.gmt",
-                       "TF" = "c3.tft.v2022.1.Hs.symbols_TF.gmt",
-                       "miRNA" = "c3.mir.v2022.1.Hs.symbols_miRNA.gmt")
+                       "REACTOME" = "c2.cp.reactome.v2022.1.Hs.symbols.gmt")
     term2gene <- read.gmt(paste0(path_dir, path_sig))
     gsea.res <- GSEA(geneList = gene_list, TERM2GENE = term2gene)
     return(gsea.res)

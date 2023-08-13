@@ -31,42 +31,45 @@ survival_cut_plot <- function(surv_data, variable, method=c("cutpoint","median")
   ########### main ##########
   surv_data <- surv_data[,c(time,event,variable)]
   surv_data <- surv_data[!is.na(surv_data[,time]) & !is.na(surv_data[,event]),]
+  colnames(surv_data) <- c("time","event","variable")
   if(length(method)>1){method <- method[1]}
   if(method == "cutpoint"){
     cat(crayon::green(">>> Performing the survival analysis on",variable,"according to the **best cutpoint**", 
                      "\n"))
-    surv_data <- survminer::surv_cutpoint(surv_data, time = time, event = event, variables = variable)
+    surv_data <- survminer::surv_cutpoint(surv_data, time = "time", event = "event", variables = "variable")
     surv_data <- survminer::surv_categorize(surv_data)
   }else if(method == "median"){
     cat(crayon::green(">>> Performing the survival analysis on",variable,"according to the **median**", 
                      "\n"))
-    surv_data[,variable] <- ifelse(surv_data[,variable] > median(surv_data[,variable]), "high", "low")
+    surv_data[,"variable"] <- ifelse(surv_data[,"variable"] > median(surv_data[,"variable"]), "high", "low")
   }else{
     stop("The input *method* is wrong!")
   }
-  surv_data[,variable] <- factor(surv_data[,variable],levels = c("low","high"))
+  surv_data[,"variable"] <- factor(surv_data[,"variable"],levels = c("low","high"))
   # log-rank test
-  diff <- survival::survdiff(as.formula("survival::Surv(get(time),get(event))~get(variable)"), data = surv_data)
-  pval <- pchisq(diff$chisq, length(diff$n) - 1, lower.tail = FALSE)
-  pval <- signif(pval,digits = 3)
-  cox_res <- Univ_Cox(variable, surv_data, time = time,event = event)
-  anno <- paste0("Log-rank\np = ",pval,"\nHazard Ratio = ",cox_res$Hazard_Ratio,"\n95% CI: ",cox_res$CI)
+  surv_diff <- survival::survdiff(as.formula("survival::Surv(time,event)~variable"), data = surv_data)
+  pval <- 1 - pchisq(surv_diff$chisq, length(surv_diff$n) - 1)
+  HR <- (surv_diff$obs[2]/surv_diff$exp[2])/(surv_diff$obs[1]/surv_diff$exp[1])
+  up95 <- exp(log(HR) + qnorm(0.975)*sqrt(1/surv_diff$exp[2]+1/surv_diff$exp[1]))
+  low95 <- exp(log(HR) - qnorm(0.975)*sqrt(1/surv_diff$exp[2]+1/surv_diff$exp[1]))
+  anno <- paste0("Log-rank\np = ",pval,"\nHazard Ratio = ",HR,"\n95% CI: ",low95,"-",up95)
   # K-M plot
-  n <- table(surv_data[,variable])
-  surv_data[,variable] <- ifelse(surv_data[,variable]=="low",
+  n <- table(surv_data[,"variable"])
+  surv_data[,"variable"] <- ifelse(surv_data[,"variable"]=="low",
                                  paste0("Low (N=",n["low"],")"),
                                  paste0("High (N=",n["high"],")"))
-  surv_data[,variable] <- factor(surv_data[,variable],levels = c(paste0("Low (N=",n["low"],")"),
+  surv_data[,"variable"] <- factor(surv_data[,"variable"],levels = c(paste0("Low (N=",n["low"],")"),
                                                                  paste0("High (N=",n["high"],")")))
   require(ggkm,warn.conflicts = FALSE, quietly = TRUE)
-  p <- ggplot2::ggplot(surv_data,ggplot2::aes_string(time=time,status=event,color=variable,fill=variable))+
+  p <- ggplot2::ggplot(surv_data,ggplot2::aes(time=time,status=event,color=variable,fill=variable))+
     ggkm::geom_km(size=1.2)+
     ggplot2::annotate("text",x=0,y=0.2,label=anno,fontface = 'italic',hjust=0)+
     ggplot2::labs(x="Follow up time (month)", y="Survival probability")+
     survminer::theme_survminer()+
     ggplot2::theme(legend.position = c(0.7,0.9),plot.title = ggplot2::element_text(hjust = 0.5))+
     ggplot2::scale_color_manual(values = palette)+
-    ggplot2::scale_fill_manual(values = palette)
+    ggplot2::scale_fill_manual(values = palette)+
+    ggplot2::labs(color=variable,fill=variable)
   if(CI==TRUE){p <- p+ggkm::geom_kmband()}
   if(!is.null(title)){p <- p+ggplot2::ggtitle(title)}
   return(p)
@@ -102,30 +105,29 @@ survival_cut_res <- function(surv_data, variable, method=c("cutpoint","median"),
                               time="time", event="event") {
   ########### main ##########
   surv_data <- surv_data[,c(time,event,variable)]
+  colnames(surv_data) <- c("time","event","variable")
   if(length(method)>1){method <- method[1]}
   if(method == "cutpoint"){
     # cat(crayon::green(">>> Performing the survival analysis on",variable,"according to the **best cutpoint**", 
     #                  "\n"))
-    surv_data <- survminer::surv_cutpoint(surv_data, time = time, event = event, variables = variable)
+    surv_data <- survminer::surv_cutpoint(surv_data, time = "time", event = "event", variables = "variable")
     surv_data <- survminer::surv_categorize(surv_data)
   }else if(method == "median"){
     # cat(crayon::green(">>> Performing the survival analysis on",variable,"according to the **median**", 
     #                  "\n"))
-    surv_data[,variable] <- ifelse(surv_data[,variable] > median(surv_data[,variable]), "high", "low")
+    surv_data[,"variable"] <- ifelse(surv_data[,"variable"] > median(surv_data[,"variable"]), "high", "low")
   }else{
     stop("The input *method* is wrong!")
   }
-  surv_data[,variable] <- factor(surv_data[,variable],levels = c("low","high"))
+  surv_data[,"variable"] <- factor(surv_data[,"variable"],levels = c("low","high"))
   # log-rank test
-  diff <- survival::survdiff(as.formula("survival::Surv(get(time),get(event))~get(variable)"), data = surv_data)
-  pval <- pchisq(diff$chisq, length(diff$n) - 1, lower.tail = FALSE)
-  pval <- signif(pval,digits = 3)
-  cox_res <- Univ_Cox(variable, surv_data, time = time,event = event)
-  anno <- paste0("Log-rank\np = ",pval,"\nHazard Ratio = ",cox_res$Hazard_Ratio,"\n95% CI: ",cox_res$CI)
-  hr <- cox_res$Hazard_Ratio
-  CI.lower <- cox_res$lower
-  CI.upper <- cox_res$upper
-  res <- data.frame(variable = variable,method=method, pvalue=pval,hazard_ratio=hr,
-                    CI.lower=CI.lower, CI.upper=CI.upper, time=time,event=event)
+  surv_diff <- survival::survdiff(as.formula("survival::Surv(time,event)~variable"), data = surv_data)
+  pval <- 1 - pchisq(surv_diff$chisq, length(surv_diff$n) - 1)
+  HR <- (surv_diff$obs[2]/surv_diff$exp[2])/(surv_diff$obs[1]/surv_diff$exp[1])
+  up95 <- exp(log(HR) + qnorm(0.975)*sqrt(1/surv_diff$exp[2]+1/surv_diff$exp[1]))
+  low95 <- exp(log(HR) - qnorm(0.975)*sqrt(1/surv_diff$exp[2]+1/surv_diff$exp[1]))
+  anno <- paste0("Log-rank\np = ",pval,"\nHazard Ratio = ",HR,"\n95% CI: ",low95,"-",up95)
+  res <- data.frame(variable = variable,method=method, pvalue=pval,hazard_ratio=HR,
+                    CI.lower=low95, CI.upper=up95, time=time,event=event)
   return(res)
 }

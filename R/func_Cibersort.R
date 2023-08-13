@@ -137,11 +137,7 @@ doPerm <- function(perm, X, Y){
 CIBERSORT_deconv <- function(mixture_file, sig_matrix = "LM22", perm=1, QN=FALSE){
 
   #read in data
-  if(sig_matrix == "LM22"){
-    X <- read.table(sig_matrix,header=T,sep="\t",row.names=1,check.names=F)
-  }else{
-    X <- sig_matrix
-  }
+  X <- sig_matrix
   
   Y <- mixture_file
 

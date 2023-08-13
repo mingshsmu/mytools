@@ -56,7 +56,7 @@ TIDE_pred <- function(exprset, keytype = "SYMBOL"){
   py_code <- c(py_code, "df = pd.read_csv('TIDE_res.csv',index_col=0)")
   py_code <- c(py_code, "df = TIDE(df,cancer='Other',pretreat = False,vthres = 0)")
   py_code <- c(py_code, "df.to_csv('TIDE_res.csv')")
-  readr::write_lines(x = res_py, file = "py_code.py")
+  readr::write_lines(x = py_code, file = "py_code.py")
   reticulate::use_condaenv("py3")
   reticulate::source_python(file = "py_code.py")
   
